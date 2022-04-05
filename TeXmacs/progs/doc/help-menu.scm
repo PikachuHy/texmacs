@@ -99,6 +99,7 @@
       (link help-plugins-menu))
   (when (url-exists-in-help? "about/about.en.tm")
 	(-> "About"
+	    (if (qt-gui?) ("About Qt" (show-about-qt)))
 	    ("Browse" (load-help-buffer "about/about"))
 	    ---
 	    ("Summary"

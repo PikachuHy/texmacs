@@ -12,30 +12,19 @@ endif (APPLE)
 
 add_library(texmacs_body STATIC ${TeXmacs_All_SRCS})
 target_link_directories(texmacs_body PUBLIC
-/usr/local/Cellar/guile@1.8/1.8.8/lib
-/usr/local/Cellar/gmp/6.2.1_1/lib
-/usr/local/Cellar/libtool/2.4.7/lib
-)
-if (WIN32)
-  add_executable (${TeXmacs_binary_name} WIN32
-    ./Texmacs/Texmacs/texmacs.cpp
-  )
-  target_link_libraries (${TeXmacs_binary_name}
-    texmacs_body
-    ${TeXmacs_Libraries}
-    ${CMAKE_DL_LIBS}
-    -lsecur32
-  )
-else (WIN32)
-  add_executable (${TeXmacs_binary_name}
-    ./Texmacs/Texmacs/texmacs.cpp
-  )
-endif (WIN32)
+        /usr/local/Cellar/guile@1.8/1.8.8/lib
+        /usr/local/Cellar/gmp/6.2.1_1/lib
+        /usr/local/Cellar/libtool/2.4.7/lib
+        )
+target_link_libraries(texmacs_body PUBLIC ${TeXmacs_Libraries} ${CMAKE_DL_LIBS})
 
-target_link_libraries (${TeXmacs_binary_name}
-  texmacs_body
-  ${TeXmacs_Libraries}
-)
+add_executable (${TeXmacs_binary_name} Texmacs/Texmacs/texmacs.cpp)
+target_link_libraries (${TeXmacs_binary_name} PRIVATE texmacs_body)
+
+if (WIN32)
+  set_target_properties(${TeXmacs_binary_name} PROPERTIES WIN32_EXECUTABLE TRUE)
+  target_link_libraries (${TeXmacs_binary_name} PRIVATE secur32)
+endif (WIN32)
 
 if (APPLE)
   set(MACOSX_BUNDLE_DISPLAY_NAME TeXmacs)

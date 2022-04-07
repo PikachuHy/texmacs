@@ -39,6 +39,8 @@
 #include "QTMInteractivePrompt.hpp"
 #include "QTMInteractiveInputHelper.hpp"
 
+#include "QTMDocTabBar.h"
+
 int menu_count = 0;  // zero if no menu is currently being displayed
 list<qt_tm_widget_rep*> waiting_widgets;
 
@@ -145,9 +147,9 @@ qt_tm_widget_rep::qt_tm_widget_rep(int mask, command _quit)
   // there is a bug in the early implementation of toolbars in Qt 4.6
   // which has been fixed in 4.6.2 (at least)
   // this is why we change dimension of icons
-  
+
 #if (defined(Q_OS_MAC)&&(QT_VERSION>=QT_VERSION_CHECK(4,6,0))&&(QT_VERSION<QT_VERSION_CHECK(4,6,2)))
-  mw->setIconSize (QSize (22, 30));  
+  mw->setIconSize (QSize (22, 30));
 #else
   mw->setIconSize (QSize (17, 17));
 #endif
@@ -206,7 +208,7 @@ qt_tm_widget_rep::qt_tm_widget_rep(int mask, command _quit)
   modeToolBar   = new QToolBar ("mode toolbar", mw);
   focusToolBar  = new QToolBar ("focus toolbar", mw);
   userToolBar   = new QToolBar ("user toolbar", mw);
-  
+  docTabBar     = new QTMDocTabBar ();
   bottomTools   = new QDockWidget ("bottom tools", mw);
   sideTools     = new QDockWidget ("side tools", 0);
     // HACK: Wrap the dock in a "fake" window widget (last parameter = true) to
@@ -274,7 +276,7 @@ qt_tm_widget_rep::qt_tm_widget_rep(int mask, command _quit)
   int toolbarHeight= 30 * retina_icons;
   mainToolBar->setFixedHeight (toolbarHeight + 8);
   modeToolBar->setFixedHeight (toolbarHeight + 4);
-  focusToolBar->setFixedHeight (toolbarHeight);  
+  focusToolBar->setFixedHeight (toolbarHeight);
 #endif
 #endif
   if (tm_style_sheet != "") {
@@ -305,6 +307,7 @@ qt_tm_widget_rep::qt_tm_widget_rep(int mask, command _quit)
   cw->setLayout (bl);
   QWidget* q = main_widget->as_qwidget(); // force creation of QWidget
   q->setParent (qwid); // q->layout()->removeWidget(q) will reset the parent to this
+  bl->addWidget(docTabBar);
   bl->addWidget (q);
   
   mw->setCentralWidget (cw);
@@ -313,6 +316,7 @@ qt_tm_widget_rep::qt_tm_widget_rep(int mask, command _quit)
   modeToolBar->setObjectName ("modeToolBar");
   focusToolBar->setObjectName ("focusToolBar");
   userToolBar->setObjectName ("userToolBar");
+  docTabBar->setObjectName ("docTabBar");
   bottomTools->setObjectName ("bottomTools");
   sideTools->setObjectName ("sideTools");
 
@@ -737,6 +741,7 @@ qt_tm_widget_rep::send (slot s, blackbox val) {
       if (DEBUG_QT_WIDGETS) debug_widgets << "\tFile: " << file << LF;
 #if (QT_VERSION >= 0x040400)
       mainwindow()->setWindowFilePath (utf8_to_qstring (file));
+      docTabBar->updateTabs(file);
 #endif
     }
       break;

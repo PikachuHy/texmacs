@@ -16,8 +16,11 @@
 #include <QPrinter>
 #include <QPrinterInfo>
 #include <QProcess>
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
 #include <QRegExp>
-
+#else
+#include <QRegularExpression>
+#endif
 /*!
  *
  */
@@ -42,9 +45,16 @@ void
 QTMPrinterSettings::getFromQPrinter(const QPrinter& from) {
   printerName   = from.printerName ();
   fileName      = from.outputFileName ();
-  orientation   = (from.orientation() == QPrinter::Landscape) 
+
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
+  orientation   = (from.orientation() == QPrinter::Landscape)
                   ? Landscape : Portrait;
   paperSize     = qtPaperSizeToQString(from.paperSize());
+#else
+  orientation   = (from.pageLayout().orientation() == QPageLayout::Landscape)
+                  ? Landscape : Portrait;
+  paperSize     = qtPaperSizeToQString(from.pageLayout().pageSize().id());
+#endif
   dpi           = from.resolution ();
   firstPage     = from.fromPage ();
   lastPage      = from.toPage ();
@@ -63,14 +73,22 @@ QTMPrinterSettings::getFromQPrinter(const QPrinter& from) {
 void
 QTMPrinterSettings::setToQPrinter(QPrinter& to) const {
   to.setResolution(dpi);
-  to.setFromTo(firstPage, lastPage);  
+  to.setFromTo(firstPage, lastPage);
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
   to.setOrientation((orientation == Landscape) ?
                     QPrinter::Landscape : QPrinter::Portrait);
-  to.setOutputFileName(fileName);
   to.setPaperSize(qStringToQtPaperSize(paperSize));
+#else
+  QPageLayout pageLayout= to.pageLayout();
+  pageLayout.setOrientation((orientation == Landscape) ?
+                            QPageLayout::Landscape : QPageLayout::Portrait);
+  pageLayout.setPageSize(qStringToQtPaperSize(paperSize));
+  to.setPageLayout(pageLayout);
+#endif
+  to.setOutputFileName(fileName);
 #if (QT_VERSION >= 0x040700)
   to.setCopyCount(copyCount);
-#endif  
+#endif
   to.setCollateCopies(collateCopies);
   to.setColorMode(blackWhite ? QPrinter::Color : QPrinter::GrayScale);
 }
@@ -80,9 +98,13 @@ QTMPrinterSettings::setToQPrinter(QPrinter& to) const {
  * representation. Massimiliano's code.
  */
 QString
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
 QTMPrinterSettings::qtPaperSizeToQString(const QPrinter::PaperSize _size) {
-  
 #define PAPER(fmt)  case QPrinter::fmt : return "fmt"
+#else
+QTMPrinterSettings::qtPaperSizeToQString(const QPageSize::PageSizeId _size) {
+#define PAPER(fmt)  case QPageSize::fmt : return "fmt"
+#endif
   switch (_size) {
       PAPER (A0) ; PAPER (A1) ; PAPER (A2) ; PAPER (A3) ; PAPER (A4) ;
       PAPER (A5) ; PAPER (A6) ; PAPER (A7) ; PAPER (A8) ; PAPER (A9) ;
@@ -97,16 +119,27 @@ QTMPrinterSettings::qtPaperSizeToQString(const QPrinter::PaperSize _size) {
 /*!
  * Just for internal use, converts a string to QPrinter::PaperSize.
  */
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
 QPrinter::PaperSize
+#else
+QPageSize::PageSizeId
+#endif
 QTMPrinterSettings::qStringToQtPaperSize(const QString& _size) {
-  
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
 #define PAPER(fmt)  if(_size == "fmt") return QPrinter::fmt
+#else
+#define PAPER(fmt)  if(_size == "fmt") return QPageSize::PageSizeId::fmt
+#endif
   PAPER (A0) ; PAPER (A1) ; PAPER (A2) ; PAPER (A3) ; PAPER (A4) ;
   PAPER (A5) ; PAPER (A6) ; PAPER (A7) ; PAPER (A8) ; PAPER (A9) ;
   PAPER (B0) ; PAPER (B1) ; PAPER (B2) ; PAPER (B3) ; PAPER (B4) ;
   PAPER (B5) ; PAPER (B6) ; PAPER (B7) ; PAPER (B8) ; PAPER (B9) ;
   PAPER (B10) ;  PAPER (Letter) ;
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
   return QPrinter::A4;  // Default
+#else
+  return QPageSize::PageSizeId::A4;  // Default
+#endif
 #undef PAPER
 }
 
@@ -122,21 +155,27 @@ QTMPrinterSettings::qStringToQtPaperSize(const QString& _size) {
 QStringList
 QTMPrinterSettings::getChoices(DriverChoices _which, int& _default) {
   QStringList _ret;
+
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
+  QString::SplitBehavior behavior = QString::SkipEmptyParts;
+#else
+  Qt::SplitBehavior behavior = Qt::SkipEmptyParts;
+#endif
   switch (_which) {
     case PageSize:
-      _ret = printerOptions["PageSize"].split(" ", QString::SkipEmptyParts);
+      _ret = printerOptions["PageSize"].split(" ", behavior);
       break;
     case Resolution:
-      _ret = printerOptions["Resolution"].split(" ", QString::SkipEmptyParts);
+      _ret = printerOptions["Resolution"].split(" ", behavior);
       break;
     case Duplex:
-      _ret = printerOptions["Duplex"].split(" ", QString::SkipEmptyParts);
+      _ret = printerOptions["Duplex"].split(" ", behavior);
       break;
     case ColorModel:
-      _ret = printerOptions["ColorModel"].split(" ", QString::SkipEmptyParts);
+      _ret = printerOptions["ColorModel"].split(" ", behavior);
       break;
     case Collate:
-      _ret = printerOptions["Collate"].split(" ", QString::SkipEmptyParts);
+      _ret = printerOptions["Collate"].split(" ", behavior);
       break;
   }
   
@@ -205,16 +244,26 @@ CupsQTMPrinterSettings::systemCommandFinished(int exitCode,
     emit doneReading();
     return;
   }
-    
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
   QRegExp rx("^(\\w+)/(.+):(.*)$"); // Param/Param desc: val1 val2 *default val4
   rx.setMinimal(true);              // Non-greedy matching
-  
+#else
+  QRegularExpression rx ("^(\\w+)/(.+):(.*)$");
+  rx.setPatternOptions (QRegularExpression::InvertedGreedinessOption);
+#endif
   QList<QByteArray> _lines = configProgram->readAllStandardOutput().split('\n');
   foreach (QString _line, _lines) {
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
     if(rx.indexIn(_line) == -1)      // No matches?
       continue;
     // Store for further parsing later, see QTMPrinterSettings::getChoices()
-    printerOptions[rx.cap(1)] = rx.cap(3);   
+    printerOptions[rx.cap(1)] = rx.cap(3);
+#else
+    QRegularExpressionMatch match = rx.match (_line);
+    if (!match.hasMatch ())
+      continue;
+    printerOptions[match.captured(1)] = match.captured(3);
+#endif
   }
   emit doneReading();
 }
@@ -309,13 +358,25 @@ CupsQTMPrinterSettings::availablePrinters() {
   stat.start("lpstat -a");
   if(! stat.waitForFinished(2000)) // 2 sec.
     return _ret;
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
   QRegExp rx("^(\\S+) +.*$");
   rx.setMinimal(true);
+#else
+  QRegularExpression rx("^(\\S+) +.*$");
+  rx.setPatternOptions(QRegularExpression::InvertedGreedinessOption);
+#endif
   QList<QByteArray> _lines = stat.readAllStandardOutput().split('\n');
   foreach (QString _line, _lines) {
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
     if(rx.indexIn(_line) == -1)      // No matches?
       continue;
     _ret << QPair<QString,QString>(rx.cap(1),rx.cap(1));
+#else
+  QRegularExpressionMatch match = rx.match (_line);
+  if (!match.hasMatch ())
+    continue;
+  _ret << QPair<QString, QString>(match.captured(1), match.captured(1));
+#endif
   }
   return _ret;
 }

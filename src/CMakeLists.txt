@@ -11,7 +11,11 @@ else (APPLE)
 endif (APPLE)
 
 add_library(texmacs_body STATIC ${TeXmacs_All_SRCS})
-
+target_link_directories(texmacs_body PUBLIC
+/usr/local/Cellar/guile@1.8/1.8.8/lib
+/usr/local/Cellar/gmp/6.2.1_1/lib
+/usr/local/Cellar/libtool/2.4.7/lib
+)
 if (WIN32)
   add_executable (${TeXmacs_binary_name} WIN32
     ./Texmacs/Texmacs/texmacs.cpp

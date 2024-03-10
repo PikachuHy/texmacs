@@ -23,7 +23,9 @@
 cmake_minimum_required (VERSION 3.13)
 
 set (CMAKE_CXX_STANDARD 11)
-set (CMAKE_AUTOMOC ON)
+if (TEXMACS_GUI MATCHES "Qt.*")
+  set (CMAKE_AUTOMOC ON)
+endif ()
 set (CMAKE_INCLUDE_CURRENT_DIR ON)
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -46,7 +48,7 @@ endif (CCACHE_FOUND)
 ### Project name 
 ### --------------------------------------------------------------------
 
-project (TEXMACS CXX C) # check for C/C++ compiler
+project (TEXMACS CXX C OBJC) # check for C/C++ compiler
 
 set (PACKAGE TeXmacs)
 set (CMAKE_MODULE_PATH ${TEXMACS_SOURCE_DIR}/cmake)
@@ -353,7 +355,11 @@ set (GS_FONTS ../share/ghostscript/fonts:/usr/share/fonts:)
 set (GS_LIB ../share/ghostscript/9.06/lib:)
 
 set (GUILE_NUM 1)
-set (PDF_RENDERER 1)
+if (TEXMACS_GUI STREQUAL "Aqua")
+  set (PDF_RENDERER 0)
+else ()
+  set (PDF_RENDERER 1)
+endif ()
 set (SIZEOF_VOID_P 8)
 set (STDC_HEADERS 1)
 
@@ -479,8 +485,6 @@ file (GLOB_RECURSE TeXmacs_Std_Plugins_SRCS
   "${TEXMACS_SOURCE_DIR}/src/Plugins/Cairo/*.cpp"
   "${TEXMACS_SOURCE_DIR}/src/Plugins/Database/*.cpp"
   "${TEXMACS_SOURCE_DIR}/src/Plugins/Freetype/*.cpp"
-  "${TEXMACS_SOURCE_DIR}/src/Plugins/Pdf/*.cpp"
-  "${TEXMACS_SOURCE_DIR}/src/Plugins/Pdf/*.c"
   "${TEXMACS_SOURCE_DIR}/src/Plugins/Ghostscript/*.cpp"
   "${TEXMACS_SOURCE_DIR}/src/Plugins/Imlib2/*.cpp"
   "${TEXMACS_SOURCE_DIR}/src/Plugins/Ispell/*.cpp"
@@ -491,12 +495,21 @@ file (GLOB_RECURSE TeXmacs_Std_Plugins_SRCS
   "${TEXMACS_SOURCE_DIR}/src/Plugins/Sqlite3/*.cpp"
   "${TEXMACS_SOURCE_DIR}/src/Plugins/Updater/*.cpp"
 )
-
+if (PDF_RENDERER)
+  file (GLOB_RECURSE TeXmacs_Pdf_Plugins_SRCS
+          "${TEXMACS_SOURCE_DIR}/src/Plugins/Pdf/*.cpp"
+          "${TEXMACS_SOURCE_DIR}/src/Plugins/Pdf/*.c"
+  )
+else ()
+  set(TeXmacs_Pdf_Plugins_SRCS "")
+endif ()
 file (GLOB_RECURSE TeXmacs_Style_SRCS
   "${TEXMACS_SOURCE_DIR}/src/Style/*.cpp"
 )
 
-set (TeXmacs_All_SRCS ${TeXmacs_Base_SRCS}  ${TeXmacs_Std_Plugins_SRCS})
+set (TeXmacs_All_SRCS ${TeXmacs_Base_SRCS}  ${TeXmacs_Std_Plugins_SRCS}
+                      ${TeXmacs_Pdf_Plugins_SRCS}
+)
 
 ### --------------------------------------------------------------------
 ### GUI Interfaces
@@ -531,7 +544,6 @@ set (TeXmacs_Cocoa_SRCS
   ${TEXMACS_SOURCE_DIR}/src/Plugins/Cocoa/aqua_renderer.mm
   ${TEXMACS_SOURCE_DIR}/src/Plugins/Cocoa/aqua_utilities.mm
   ${TEXMACS_SOURCE_DIR}/src/Plugins/Cocoa/aqua_widget.mm
-  ${TEXMACS_SOURCE_DIR}/src/Plugins/Cocoa/mac_utilities.mm
   ${TEXMACS_SOURCE_DIR}/src/Plugins/Cocoa/TMButtonsController.m
   ${TEXMACS_SOURCE_DIR}/src/Plugins/Cocoa/TMView.mm
 )
@@ -551,6 +563,10 @@ if (APPLE AND EXISTS /opt/homebrew/lib)
   link_directories (/opt/homebrew/lib)
   link_directories (/usr/local/lib)
 endif ()
+if (APPLE AND EXISTS /usr/local/lib)
+  link_directories (/usr/local/lib)
+endif ()
+
 if (APPLE AND EXISTS /usr/local/lib)
   link_directories (/usr/local/lib)
 endif ()
@@ -681,6 +697,8 @@ elseif (TEXMACS_GUI STREQUAL "Aqua")
   )
   set (TeXmacs_All_SRCS ${TeXmacs_All_SRCS} ${TeXmacs_Cocoa_SRCS})
   set (TeXmacs_Libraries ${TeXmacs_Libraries} ${COCOA_LIBRARY})
+  set (AQUATEXMACS 1)
+  add_definitions ("-DAQUATEXMACS")
 
   mark_as_advanced(COCOA_LIBRARY)
   mark_as_advanced(COCOA_INCLUDE_DIR)
@@ -749,7 +767,6 @@ if (APPLE)
 
   set (GUI_TYPE MACOSX_BUNDLE)
   set (NO_FAST_ALLOC 1)
-  set (AQUATEXMACS 1)
   set (COCOA_CFLAGS "")
   set (COCOA_LDFLAGS "-framework COCOA")
   set (CONFIG_GUI "COCOA")

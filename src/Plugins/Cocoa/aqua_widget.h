@@ -32,7 +32,8 @@ public:
 	
 	virtual widget plain_window_widget (string s); 
 	virtual widget make_popup_widget (); 
-	virtual widget popup_window_widget (string s); 
+	virtual widget popup_window_widget (string s);
+    virtual widget tooltip_window_widget (string s);
  
   virtual TMMenuItem *as_menuitem();
 

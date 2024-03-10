@@ -65,6 +65,13 @@ aqua_widget_rep::popup_window_widget (string s) {
 }
 
 
+widget
+aqua_widget_rep::tooltip_window_widget (string s) {
+    (void) s;
+    return widget();
+}
+
+
 
 TMMenuItem *
 aqua_widget_rep::as_menuitem() { 
@@ -164,7 +171,9 @@ aqua_view_widget_rep::send (slot s, blackbox val) {
       [view scrollPoint: qp];
     }
       break;
-        
+    case SLOT_BOTTOM_TOOLS_VISIBILITY: {
+          break;
+      }
   default:
     if (DEBUG_AQUA_WIDGETS)
        debug_widgets << "slot type= " << slot_name (s) << "\n";
@@ -230,6 +239,8 @@ void
 aqua_view_widget_rep::write (slot s, blackbox index, widget w) {
   switch (s) {
   default:
+      if (DEBUG_AQUA_WIDGETS)
+          debug_widgets << "slot type= " << slot_name (s) << "\n";
     FAILED ("cannot handle slot type");
   }
 }
@@ -710,6 +721,10 @@ aqua_tm_widget_rep::write (slot s, blackbox index, widget w) {
     check_type_void (index, "SLOT_INTERACTIVE_INPUT");
     int_input = concrete(w);
     //			THIS << set_widget ("interactive input", concrete (w));
+    break;
+      case SLOT_SIDE_TOOLS:
+      case SLOT_EXTRA_TOOLS:
+  case SLOT_LEFT_TOOLS:
     break;
   default:
     aqua_view_widget_rep::write(s,index,w);
@@ -1259,3 +1274,7 @@ widget refreshable_widget (object promise, string kind) {
 //widget wait_widget (SI width, SI height, string message) {
 //  (void) width; (void) height; (void) message; return widget();
 //}
+
+widget tooltip_window_widget (widget w, string s) {
+    return concrete(w)->tooltip_window_widget (s);
+}

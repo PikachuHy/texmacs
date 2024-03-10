@@ -14,7 +14,7 @@
 #include "dictionary.hpp"
 #include "aqua_gui.h"
 #include "analyze.hpp"
-#include <locale.h>
+#include "locale.hpp"
 #include "language.hpp"
 #include "message.hpp"
 #include "aqua_renderer.h" // for the_aqua_renderer
@@ -523,4 +523,8 @@ external_event (string type, time_t t) {
     if (wid) the_gui -> process_keypress (wid, type, t);
   }
 #endif
+}
+string
+gui_version () {
+    return "aqua";
 }

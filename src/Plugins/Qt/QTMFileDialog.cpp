@@ -92,11 +92,19 @@ simple_input (string s, QLineEdit* ledit, QWidget* parent= 0) {
 
 QTMImagePreview::QTMImagePreview (QWidget* parent)
   : QWidget (parent) {
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
   QRegExp rxpos("^[+]?([0-9]*[.])?[0-9]+([a-z]*|%)$");
   //we could explicitly list all accepted lengths...
   QValidator *validator1 = new QRegExpValidator(rxpos, this);
   QRegExp rx("^[+-]?([0-9]*[.])?[0-9]+([a-z]*|%)$");
   QValidator *validator2 = new QRegExpValidator(rx, this);
+#else
+  QRegularExpression rxpos("^[+]?([0-9]*[.])?[0-9]+([a-z]*|%)$");
+  //we could explicitly list all accepted lengths...
+  QValidator *validator1 = new QRegularExpressionValidator(rxpos, this);
+  QRegularExpression rx("^[+-]?([0-9]*[.])?[0-9]+([a-z]*|%)$");
+  QValidator *validator2 = new QRegularExpressionValidator(rx, this);
+#endif
   
   QVBoxLayout* vbox= new QVBoxLayout (this);
   vbox->addStretch ();

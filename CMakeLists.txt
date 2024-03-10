@@ -549,6 +549,10 @@ set (TeXmacs_MacOS_SRCS
 
 if (APPLE AND EXISTS /opt/homebrew/lib)
   link_directories (/opt/homebrew/lib)
+  link_directories (/usr/local/lib)
+endif ()
+if (APPLE AND EXISTS /usr/local/lib)
+  link_directories (/usr/local/lib)
 endif ()
 
 set (TeXmacs_Libraries
@@ -612,16 +616,23 @@ if (TEXMACS_GUI MATCHES "Qt.*")
     endif ()
 
     if (APPLE)
-      find_package (Qt5 COMPONENTS Core Gui Widgets PrintSupport Svg MacExtras REQUIRED)
+      find_package (QT NAMES Qt6 Qt5 COMPONENTS Core Gui Widgets PrintSupport Svg REQUIRED)
+      find_package (Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui Widgets PrintSupport Svg REQUIRED)
     else (APPLE)
-      find_package (Qt5 COMPONENTS Core Gui Widgets PrintSupport Svg REQUIRED)
+      find_package (QT NAMES Qt6 Qt5 COMPONENTS Core Gui Widgets PrintSupport Svg REQUIRED)
+      find_package (Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui Widgets PrintSupport Svg REQUIRED)
     endif ()
     
     if (APPLE)
-      set (QT_LIBRARIES Qt5::Core Qt5::Gui Qt5::Widgets Qt5::PrintSupport Qt5::Svg Qt5::MacExtras)
+      set (QT_LIBRARIES Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::PrintSupport Qt${QT_VERSION_MAJOR}::Svg)
     else (APPLE)
       set (QT_LIBRARIES Qt5::Core Qt5::Gui Qt5::Widgets Qt5::PrintSupport Qt5::Svg)
     endif (APPLE)
+
+    if (${QT_VERSION_MAJOR} EQUAL 5)
+      find_package (Qt${QT_VERSION_MAJOR} COMPONENTS MacExtras REQUIRED)
+      set (QT_LIBRARIES ${QT_LIBRARIES} Qt5::MacExtras)
+    endif ()
 
     set (TeXmacs_Include_Dirs
       ${TeXmacs_Include_Dirs}
@@ -768,6 +779,7 @@ include_directories (${TeXmacs_Include_Dirs})
 ### --------------------------------------------------------------------
 
 add_subdirectory (src)
+target_link_libraries(texmacs_body PUBLIC ${QT_LIBRARIES})
 add_subdirectory (plugins)
 add_subdirectory (misc)
 add_subdirectory (TeXmacs)

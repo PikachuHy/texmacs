@@ -151,8 +151,17 @@ typedef std::vector<EncodingsInfo*> EncodingsInfoVector;
 
 
 
-
+#if defined(__clang__) || defined(__GNUC__)
+#define CPP_STANDARD __cplusplus
+#elif defined(_MSC_VER)
+#define CPP_STANDARD _MSVC_LANG
+#endif
+#if CPP_STANDARD >= 201703L
+class StringLess
+#else
 class StringLess : public std::binary_function<const char*,const char*,bool>
+#endif
+#undef CPP_STANDARD
 {
 public:
 	bool operator( ) (const char* left, 

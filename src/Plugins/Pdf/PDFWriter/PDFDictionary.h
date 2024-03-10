@@ -26,8 +26,17 @@
 #include <map>
 
 
-
+#if defined(__clang__) || defined(__GNUC__)
+#define CPP_STANDARD __cplusplus
+#elif defined(_MSC_VER)
+#define CPP_STANDARD _MSVC_LANG
+#endif
+#if CPP_STANDARD >= 201703L
+class PDFNameLess
+#else
 class PDFNameLess : public std::binary_function<const PDFName*,const PDFName*,bool>
+#endif
+#undef CPP_STANDARD
 {
 public:
 	bool operator( ) (const PDFName* left, 

@@ -257,9 +257,14 @@ QTMWidget::resizeEventBis (QResizeEvent *event) {
 void
 QTMWidget::paintEvent (QPaintEvent* event) {
   QPainter p (surface());
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
   QVector<QRect> rects = event->region().rects();
   for (int i = 0; i < rects.count(); ++i) {
     QRect qr = rects.at (i);
+#else
+  for (const QRect* it = event->region().begin(); it != event->region().end(); it++) {
+    QRect qr = *it;
+#endif
     p.drawPixmap (QRect (qr.x(), qr.y(), qr.width(), qr.height()),
                   *(tm_widget()->backingPixmap),
                   QRect (retina_factor * qr.x(),
@@ -427,7 +432,11 @@ QTMWidget::keyPressEvent (QKeyEvent* event) {
                ((int) (unsigned char) r[0]) < 32 ||
                ((int) (unsigned char) r[0]) >= 128) &&
               key >= 32 && key < 128 &&
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
               ((mods & (Qt::MetaModifier + Qt::ControlModifier)) == 0)) {
+#else
+              ((mods & (Qt::MetaModifier | Qt::ControlModifier)) == 0)) {
+#endif
             if ((mods & Qt::ShiftModifier) == 0 && key >= 65 && key <= 90)
               key += 32;
             qtcomposemap (key)= r;
@@ -464,7 +473,11 @@ mouse_state (QMouseEvent* event, bool flag) {
   Qt::KeyboardModifiers kstate= event->modifiers ();
   if (flag) bstate= bstate | tstate;
   if ((bstate & Qt::LeftButton     ) != 0) i += 1;
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
   if ((bstate & Qt::MidButton      ) != 0) i += 2;
+#else
+  if ((bstate & Qt::MiddleButton   ) != 0) i += 2;
+#endif
   if ((bstate & Qt::RightButton    ) != 0) i += 4;
   if ((bstate & Qt::XButton1       ) != 0) i += 8;
   if ((bstate & Qt::XButton2       ) != 0) i += 16;
@@ -533,7 +546,7 @@ QTMWidget::inputMethodEvent (QInputMethodEvent* event) {
     else done= false;
 #endif
 #endif
-    
+
     if (!done) {
       if (DEBUG_QT)
         debug_qt << "IM committing: " << commit_string.toUtf8().data() << LF;
@@ -597,7 +610,12 @@ QTMWidget::inputMethodEvent (QInputMethodEvent* event) {
 QVariant 
 QTMWidget::inputMethodQuery (Qt::InputMethodQuery query) const {
   switch (query) {
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
+    // This query is obsolete. Use ImCursorRectangle instead.
     case Qt::ImMicroFocus : {
+#else
+    case Qt::ImCursorRectangle : {
+#endif
       const QPoint &topleft= cursor_pos - tm_widget()->backing_pos + surface()->geometry().topLeft();
       return QVariant (QRect (topleft, QSize (5, 5)));
     }
@@ -650,7 +668,11 @@ tablet_state (QTabletEvent* event, bool flag) {
   Qt::MouseButton  tstate= event->button ();
   if (flag) bstate= bstate | tstate;
   if ((bstate & Qt::LeftButton     ) != 0) i += 1;
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
   if ((bstate & Qt::MidButton      ) != 0) i += 2;
+#else
+  if ((bstate & Qt::MiddleButton   ) != 0) i += 2;
+#endif
   if ((bstate & Qt::RightButton    ) != 0) i += 4;
   if ((bstate & Qt::XButton1       ) != 0) i += 8;
   if ((bstate & Qt::XButton2       ) != 0) i += 16;
@@ -974,7 +996,11 @@ wheel_state (QWheelEvent* event) {
   Qt::MouseButtons bstate= event->buttons ();
   Qt::KeyboardModifiers kstate= event->modifiers ();
   if ((bstate & Qt::LeftButton     ) != 0) i += 1;
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
   if ((bstate & Qt::MidButton      ) != 0) i += 2;
+#else
+  if ((bstate & Qt::MiddleButton      ) != 0) i += 2;
+#endif
   if ((bstate & Qt::RightButton    ) != 0) i += 4;
   if ((bstate & Qt::XButton1       ) != 0) i += 8;
   if ((bstate & Qt::XButton2       ) != 0) i += 16;
@@ -999,8 +1025,7 @@ QTMWidget::wheelEvent(QWheelEvent *event) {
   if (is_nil (tmwid)) return; 
   if (as_bool (call ("wheel-capture?"))) {
 #if (QT_VERSION >= 0x060000)
-    QPointF pos  = event->position();
-    QPoint  point= QPointF (pos.x(), pos.y()) + origin();
+    QPoint  point= (event->position()).toPoint() + origin();
 #else
     QPoint  point= event->pos() + origin();
 #endif
@@ -1019,7 +1044,13 @@ QTMWidget::wheelEvent(QWheelEvent *event) {
                               mstate, texmacs_time (), data);
   }
   else if (QApplication::keyboardModifiers() == Qt::ControlModifier) {
+#if QT_VERSION <  QT_VERSION_CHECK(6, 0, 0)
+    // see https://doc.qt.io/qt-5/qwheelevent-obsolete.html#delta
     if (event->delta() > 0) {
+#else
+    QPoint numDegrees = event->angleDelta() / 8;
+    if (numDegrees.y() > 0) {
+#endif
       //double x= exp (((double) event->delta ()) / 500.0);
       //call ("zoom-in", object (x));
       call ("zoom-in", object (sqrt (sqrt (sqrt (sqrt (2.0))))));

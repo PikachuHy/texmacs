@@ -51,7 +51,17 @@ struct Stem
 	long mExtent;
 };
 
+#if defined(__clang__) || defined(__GNUC__)
+#define CPP_STANDARD __cplusplus
+#elif defined(_MSC_VER)
+#define CPP_STANDARD _MSVC_LANG
+#endif
+#if CPP_STANDARD >= 201703L
+class StemLess
+#else
 class StemLess : public std::binary_function<const Stem,const Stem,bool>
+#endif
+#undef CPP_STANDARD
 {
 public:
 	bool operator( ) (const Stem& inLeft, 
